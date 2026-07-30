@@ -177,6 +177,7 @@ export type Database = {
         Row: {
           business_id: string
           created_at: string
+          expo_push_token: string | null
           full_name: string
           id: string
           role: string
@@ -185,6 +186,7 @@ export type Database = {
         Insert: {
           business_id: string
           created_at?: string
+          expo_push_token?: string | null
           full_name: string
           id?: string
           role?: string
@@ -193,6 +195,7 @@ export type Database = {
         Update: {
           business_id?: string
           created_at?: string
+          expo_push_token?: string | null
           full_name?: string
           id?: string
           role?: string
@@ -262,7 +265,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      daily_metrics: {
+        Row: {
+          booked_slots: number | null
+          business_id: string | null
+          day: string | null
+          revenue: number | null
+          total_slots: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       auth_business_id: { Args: never; Returns: string }

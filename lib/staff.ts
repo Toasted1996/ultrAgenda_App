@@ -25,8 +25,10 @@ export function useCurrentStaff() {
       .select('id, full_name, role, business_id')
       .eq('user_id', session.user.id)
       .single()
-      .then(({ data }: { data: Staff | null }) => {
-        setStaff(data);
+      .then(({ data }) => {
+        // The generated Supabase types widen the `role` check-constraint column
+        // to `string`; narrow it back to the app's Staff union here.
+        setStaff(data as Staff | null);
         setLoading(false);
       });
   }, [session?.user.id]);

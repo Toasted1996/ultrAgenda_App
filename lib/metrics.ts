@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import { toLocalDateKey } from './date';
 
 export function useDailyMetrics(businessId: string | undefined) {
   const [revenue, setRevenue] = useState(0);
@@ -12,16 +13,18 @@ export function useDailyMetrics(businessId: string | undefined) {
       return;
     }
     setLoading(true);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toLocalDateKey(new Date());
     supabase
       .from('daily_metrics')
       .select('revenue, booked_slots, total_slots')
       .eq('business_id', businessId)
       .eq('day', today)
       .single()
-      .then(({ data }: { data: { revenue: number; booked_slots: number; total_slots: number } | null }) => {
+      .then(({ data }) => {
+        const totalSlots = data?.total_slots ?? 0;
+        const bookedSlots = data?.booked_slots ?? 0;
         setRevenue(data?.revenue ?? 0);
-        setOccupancyRate(data && data.total_slots > 0 ? data.booked_slots / data.total_slots : 0);
+        setOccupancyRate(totalSlots > 0 ? bookedSlots / totalSlots : 0);
         setLoading(false);
       });
   }, [businessId]);
