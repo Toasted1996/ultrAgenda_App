@@ -1,4 +1,4 @@
-import { formatTime, formatDayLabel, isSameLocalDay } from '../../lib/date';
+import { formatTime, formatDayLabel, isSameLocalDay, toLocalDateKey } from '../../lib/date';
 
 describe('date utils', () => {
   it('formats time as HH:mm', () => {
@@ -32,5 +32,16 @@ describe('date utils', () => {
     const reference = new Date('2026-07-30T10:00:00-04:00');
     expect(isSameLocalDay('2026-07-30T23:00:00-04:00', reference)).toBe(true);
     expect(isSameLocalDay('2026-07-31T01:00:00-04:00', reference)).toBe(false);
+  });
+
+  it('builds a YYYY-MM-DD key from local date components', () => {
+    const testDate = new Date(2026, 6, 30, 23, 30, 0); // July 30 2026, 23:30 local time
+
+    const expectedYear = testDate.getFullYear();
+    const expectedMonth = String(testDate.getMonth() + 1).padStart(2, '0');
+    const expectedDay = String(testDate.getDate()).padStart(2, '0');
+    const expectedKey = `${expectedYear}-${expectedMonth}-${expectedDay}`;
+
+    expect(toLocalDateKey(testDate)).toBe(expectedKey);
   });
 });
