@@ -22,6 +22,7 @@ export default function TabsLayout() {
         name="agenda/index"
         options={{ title: 'Agenda', tabBarIcon: ({ color, size }) => <Ionicons name="calendar" color={color} size={size} /> }}
       />
+      <Tabs.Screen name="agenda/[id]" options={{ href: null }} />
       <Tabs.Screen
         name="metrics/index"
         options={{ title: 'Métricas', tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart" color={color} size={size} /> }}
