@@ -38,6 +38,19 @@ export function useAppointmentsToday(staffId?: string) {
     fetchAppointments();
   }, [fetchAppointments]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('appointments-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => {
+        fetchAppointments();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchAppointments]);
+
   return { appointments, loading, refetch: fetchAppointments };
 }
 
