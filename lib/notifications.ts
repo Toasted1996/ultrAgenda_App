@@ -12,11 +12,19 @@ export type AppNotification = {
 };
 
 export async function registerPushToken(staffId: string) {
-  if (!Device.isDevice) return;
-  const { status } = await Notifications.requestPermissionsAsync();
-  if (status !== 'granted') return;
-  const { data: token } = await Notifications.getExpoPushTokenAsync();
-  await supabase.from('staff').update({ expo_push_token: token }).eq('id', staffId);
+  // Best effort: push registration must never crash the app. app.json currently
+  // ships a placeholder `extra.eas.projectId` until `eas build:configure` runs,
+  // which can make getExpoPushTokenAsync() throw. Permissions can also be
+  // denied by the user. Either case should just leave push notifications off.
+  try {
+    if (!Device.isDevice) return;
+    const { status } = await Notifications.requestPermissionsAsync();
+    if (status !== 'granted') return;
+    const { data: token } = await Notifications.getExpoPushTokenAsync();
+    await supabase.from('staff').update({ expo_push_token: token }).eq('id', staffId);
+  } catch (error) {
+    console.warn('registerPushToken failed, continuing without push notifications:', error);
+  }
 }
 
 export function useNotifications() {
