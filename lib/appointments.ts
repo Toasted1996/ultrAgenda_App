@@ -40,3 +40,8 @@ export function useAppointmentsToday(staffId?: string) {
 
   return { appointments, loading, refetch: fetchAppointments };
 }
+
+export async function updateAppointmentStatus(id: string, status: Appointment['status']) {
+  const { error } = await supabase.from('appointments').update({ status }).eq('id', id);
+  return { error: error?.message ?? null };
+}
