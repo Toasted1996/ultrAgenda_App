@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "expo-scaffold",
-    "slug": "expo-scaffold",
+    "name": "UltrAgenda",
+    "slug": "ultragenda",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "exposcaffold",
+    "scheme": "ultragenda",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
