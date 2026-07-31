@@ -13,7 +13,9 @@
     },
     "android": {
       "package": "com.ultragenda.app",
-      "permissions": ["NOTIFICATIONS"],
+      "permissions": [
+        "NOTIFICATIONS"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -44,9 +46,11 @@
       "typedRoutes": true
     },
     "extra": {
+      "router": {},
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+        "projectId": "6fabff31-5952-46bc-a43f-4231b6691354"
       }
-    }
+    },
+    "owner": "ultragenda"
   }
 }
