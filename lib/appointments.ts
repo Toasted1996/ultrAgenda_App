@@ -10,29 +10,54 @@ export type Appointment = {
   staff: { full_name: string };
 };
 
-export function useAppointmentsToday(staffId?: string) {
+export type AppointmentsRange = 'today' | 'week';
+
+function rangeBounds(range: AppointmentsRange): { start: Date; end: Date } {
+  const now = new Date();
+
+  if (range === 'today') {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(now);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  }
+
+  // 'week': lunes 00:00:00 a domingo 23:59:59.999, hora local del dispositivo.
+  const dayOfWeek = now.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sábado
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+  const start = new Date(now);
+  start.setDate(now.getDate() - daysSinceMonday);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+}
+
+export function useAppointments(range: AppointmentsRange, staffId?: string) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAppointments = useCallback(async () => {
     setLoading(true);
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
+    const { start, end } = rangeBounds(range);
 
     let query = supabase
       .from('appointments')
       .select('id, service_name, starts_at, status, client:clients(full_name), staff:staff(full_name)')
-      .gte('starts_at', startOfDay.toISOString())
-      .lte('starts_at', endOfDay.toISOString());
+      .gte('starts_at', start.toISOString())
+      .lte('starts_at', end.toISOString());
 
     if (staffId) query = query.eq('staff_id', staffId);
 
     const { data, error } = await query.order('starts_at', { ascending: true });
     if (!error && data) setAppointments(data as unknown as Appointment[]);
     setLoading(false);
-  }, [staffId]);
+  }, [range, staffId]);
 
   useEffect(() => {
     fetchAppointments();
