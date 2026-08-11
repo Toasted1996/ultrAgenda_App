@@ -1,5 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { useAppointmentsToday } from '../../lib/appointments';
+import { useAppointments } from '../../lib/appointments';
 import { supabase } from '../../lib/supabase';
 
 jest.mock('../../lib/supabase', () => ({
@@ -22,9 +22,9 @@ jest.mock('../../lib/supabase', () => ({
   },
 }));
 
-describe('useAppointmentsToday', () => {
+describe('useAppointments', () => {
   it('loads appointments for today', async () => {
-    const { result } = await renderHook(() => useAppointmentsToday());
+    const { result } = await renderHook(() => useAppointments('today'));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.appointments).toHaveLength(1);
     expect(result.current.appointments[0].client.full_name).toBe('Ana');

@@ -1,5 +1,5 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { useAppointmentsToday } from '../../lib/appointments';
+import { useAppointments } from '../../lib/appointments';
 import { supabase } from '../../lib/supabase';
 
 const mockChannel = {
@@ -21,9 +21,9 @@ jest.mock('../../lib/supabase', () => ({
   },
 }));
 
-describe('useAppointmentsToday realtime', () => {
+describe('useAppointments realtime', () => {
   it('subscribes to appointments changes on mount', async () => {
-    const { result } = await renderHook(() => useAppointmentsToday());
+    const { result } = await renderHook(() => useAppointments('today'));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(supabase.channel).toHaveBeenCalledWith('appointments-changes');
     expect(mockChannel.on).toHaveBeenCalledWith(
