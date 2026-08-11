@@ -15,7 +15,9 @@ function groupByDay(appointments: Appointment[]): ListRow[] {
   const rows: ListRow[] = [];
   let lastDay = '';
   for (const appointment of appointments) {
-    const day = appointment.starts_at.slice(0, 10);
+    // `starts_at` es timestamptz (UTC); agrupar por el día LOCAL del
+    // dispositivo para que coincida con el encabezado que renderiza dayLabel.
+    const day = new Date(appointment.starts_at).toDateString();
     if (day !== lastDay) {
       rows.push({ type: 'header', label: dayLabel(appointment.starts_at) });
       lastDay = day;

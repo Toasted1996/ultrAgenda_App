@@ -35,6 +35,7 @@ export default function TabsLayout() {
         name="profile/index"
         options={{ title: 'Perfil', tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} /> }}
       />
+      <Tabs.Screen name="profile/services" options={{ href: null }} />
     </Tabs>
   );
 }

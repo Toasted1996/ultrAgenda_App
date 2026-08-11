@@ -4,6 +4,7 @@ import { useCurrentStaff } from '../../../lib/staff';
 import { supabase } from '../../../lib/supabase';
 
 type Service = { name: string; price: number; duration_minutes: number };
+type NumericField = 'price' | 'duration_minutes';
 
 export default function ServicesScreen() {
   const { staff, loading: staffLoading } = useCurrentStaff();
@@ -14,22 +15,38 @@ export default function ServicesScreen() {
   const [newName, setNewName] = useState('');
   const [newPrice, setNewPrice] = useState('');
   const [newDuration, setNewDuration] = useState('');
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (!staff?.business_id) return;
+    if (!staff?.business_id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     supabase
       .from('businesses')
       .select('config_json')
       .eq('id', staff.business_id)
       .single()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          // No poblar el estado desde una respuesta fallida: si `configJson`
+          // quedara en `{}` un guardado posterior sobrescribiría el
+          // config_json real (hours, welcome_message, ...) del negocio.
+          setLoadFailed(true);
+          setLoading(false);
+          Alert.alert('Error', 'No se pudo cargar la configuración: ' + error.message);
+          return;
+        }
         const config = (data?.config_json as Record<string, unknown>) ?? {};
+        setLoadFailed(false);
         setConfigJson(config);
         setServices((config.services as Service[]) ?? []);
         setLoading(false);
       });
-  }, [staff?.business_id]);
+  }, [staff?.business_id, reloadKey]);
 
   async function persist(nextServices: Service[]) {
     if (!staff?.business_id) return;
@@ -48,25 +65,61 @@ export default function ServicesScreen() {
     setServices(nextServices);
   }
 
-  function updateField(index: number, field: keyof Service, value: string) {
+  function isValidNumber(value: number) {
+    return Number.isFinite(value) && value > 0;
+  }
+
+  function updateField(index: number, field: 'name', value: string) {
     const next = [...services];
-    if (field === 'name') {
-      next[index] = { ...next[index], name: value };
-    } else {
-      const parsed = Number(value);
-      next[index] = { ...next[index], [field]: Number.isFinite(parsed) ? parsed : 0 };
-    }
+    next[index] = { ...next[index], [field]: value };
     setServices(next);
   }
 
+  function draftKey(index: number, field: NumericField) {
+    return `${index}:${field}`;
+  }
+
+  function setDraft(index: number, field: NumericField, value: string) {
+    setDrafts((prev) => ({ ...prev, [draftKey(index, field)]: value }));
+  }
+
+  function clearDraft(index: number, field: NumericField) {
+    setDrafts((prev) => {
+      const next = { ...prev };
+      delete next[draftKey(index, field)];
+      return next;
+    });
+  }
+
+  /** Commitea el borrador numérico sólo si es válido; si no, revierte al
+   * último valor guardado y avisa (evita persistir precios/duraciones en 0). */
+  function commitNumericField(index: number, field: NumericField) {
+    const draft = drafts[draftKey(index, field)];
+    if (draft === undefined) return;
+    const parsed = Number(draft);
+    if (!isValidNumber(parsed)) {
+      clearDraft(index, field);
+      Alert.alert('Valor inválido', 'El precio y la duración deben ser mayores a cero.');
+      return;
+    }
+    clearDraft(index, field);
+    if (parsed === services[index][field]) return;
+    const next = [...services];
+    next[index] = { ...next[index], [field]: parsed };
+    persist(next);
+  }
+
   function removeService(index: number) {
+    // Los borradores están indexados por posición: al eliminar una fila los
+    // índices se desplazan, así que se descartan.
+    setDrafts({});
     persist(services.filter((_, i) => i !== index));
   }
 
   function addService() {
     const price = Number(newPrice);
     const duration = Number(newDuration);
-    if (!newName.trim() || !Number.isFinite(price) || price <= 0 || !Number.isFinite(duration) || duration <= 0) {
+    if (!newName.trim() || !isValidNumber(price) || !isValidNumber(duration)) {
       Alert.alert('Datos inválidos', 'Nombre, precio y duración deben ser válidos y mayores a cero.');
       return;
     }
@@ -85,12 +138,32 @@ export default function ServicesScreen() {
     );
   }
 
+  if (loadFailed) {
+    // Sin la config real cargada, cualquier guardado sobrescribiría el
+    // config_json del negocio: se bloquea la edición hasta poder recargar.
+    return (
+      <View className="flex-1 pt-14 px-6 bg-white">
+        <Text className="text-2xl font-bold mb-4">Servicios y precios</Text>
+        <Text className="text-gray-700 mb-4">
+          No se pudo cargar la configuración del negocio. No es seguro editar los servicios sin
+          ella.
+        </Text>
+        <Pressable
+          className="bg-black rounded-lg py-3 items-center"
+          onPress={() => setReloadKey((k) => k + 1)}
+        >
+          <Text className="text-white font-semibold">Reintentar</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 pt-14 px-6 bg-white">
       <Text className="text-2xl font-bold mb-4">Servicios y precios</Text>
       <FlatList
         data={services}
-        keyExtractor={(item, index) => `${item.name}-${index}`}
+        keyExtractor={(_, index) => String(index)}
         renderItem={({ item, index }) => (
           <View className="flex-row items-center mb-3 gap-2">
             <TextInput
@@ -101,17 +174,17 @@ export default function ServicesScreen() {
             />
             <TextInput
               className="w-20 border border-gray-300 rounded-lg px-3 py-2"
-              value={String(item.price)}
+              value={drafts[draftKey(index, 'price')] ?? String(item.price)}
               keyboardType="numeric"
-              onChangeText={(v) => updateField(index, 'price', v)}
-              onEndEditing={() => persist(services)}
+              onChangeText={(v) => setDraft(index, 'price', v)}
+              onEndEditing={() => commitNumericField(index, 'price')}
             />
             <TextInput
               className="w-16 border border-gray-300 rounded-lg px-3 py-2"
-              value={String(item.duration_minutes)}
+              value={drafts[draftKey(index, 'duration_minutes')] ?? String(item.duration_minutes)}
               keyboardType="numeric"
-              onChangeText={(v) => updateField(index, 'duration_minutes', v)}
-              onEndEditing={() => persist(services)}
+              onChangeText={(v) => setDraft(index, 'duration_minutes', v)}
+              onEndEditing={() => commitNumericField(index, 'duration_minutes')}
             />
             <Pressable onPress={() => removeService(index)}>
               <Text className="text-red-500 font-bold">✕</Text>
