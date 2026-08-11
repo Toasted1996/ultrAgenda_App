@@ -77,22 +77,31 @@ export type Database = {
       }
       businesses: {
         Row: {
+          config_json: Json
           created_at: string
           id: string
           name: string
+          niche: string | null
           timezone: string
+          whatsapp_phone_number_id: string | null
         }
         Insert: {
+          config_json?: Json
           created_at?: string
           id?: string
           name: string
+          niche?: string | null
           timezone?: string
+          whatsapp_phone_number_id?: string | null
         }
         Update: {
+          config_json?: Json
           created_at?: string
           id?: string
           name?: string
+          niche?: string | null
           timezone?: string
+          whatsapp_phone_number_id?: string | null
         }
         Relationships: []
       }
